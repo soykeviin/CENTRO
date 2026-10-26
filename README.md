@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="README.es.md">Leer en español</a>
+  <a href="https://soykeviin.github.io/CENTRO/">Website</a> &nbsp;·&nbsp; <a href="README.es.md">Leer en español</a>
 </p>
 
 <p align="center">

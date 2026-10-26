@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CENTRO · Open any project in Claude Code in one click</title>
+  <meta name="description" content="A free, open source native macOS app: find any of your code projects from the menu bar and open it in Claude Code, your editor or the terminal.">
+  <meta name="theme-color" content="#0E0E11">
+  <link rel="icon" type="image/png" href="icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CENTRO: open any project in Claude Code in one click">
+  <meta property="og:description" content="Free and open source macOS app. Menu bar search, one click to Claude Code, git state and dev servers at a glance.">
+  <meta property="og:image" content="https://soykeviin.github.io/CENTRO/site/media/og.png">
+  <meta property="og:url" content="https://soykeviin.github.io/CENTRO/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://soykeviin.github.io/CENTRO/site/media/og.png">
+  <link rel="preload" href="site/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    @font-face { font-family: "Geist"; src: url("site/fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+    @font-face { font-family: "Geist Mono"; src: url("site/fonts/GeistMono-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+
+    /* Tema oscuro fijo, igual que la app. Un solo acento: el lila de CENTRO. Radios: 14px tarjetas, pill solo en botones. */
+    :root {
+      --bg: #0E0E11;
+      --surface: #16161B;
+      --surface-2: #1C1B22;
+      --line: rgba(255,255,255,0.08);
+      --text: #F2F0F5;
+      --muted: #A3A0AD;
+      --accent: #B14EFF;
+      --accent-soft: #C77DFF;
+      --accent-ink: #1A0630;
+      --radius: 14px;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: "Geist", system-ui, sans-serif; font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    img, video { display: block; max-width: 100%; height: auto; }
+    .wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+    /* Los hijos de grilla no se estiran por el código largo (evita scroll horizontal en el celular) */
+    .hero .wrap > *, .bento > *, .install > *, .step > * { min-width: 0; }
+    .icon { width: 20px; height: 20px; flex: none; fill: currentColor; }
+    code, .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+
+    /* Navegación */
+    nav { position: sticky; top: 0; z-index: 10; background: rgba(14,14,17,0.82); backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px); border-bottom: 1px solid var(--line); }
+    nav .wrap { height: 64px; display: flex; align-items: center; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.01em; font-size: 18px; }
+    .brand img { width: 30px; height: 30px; border-radius: 8px; }
+    .nav-links { display: flex; gap: 24px; margin-left: auto; font-size: 15px; color: var(--muted); align-items: center; }
+    .nav-links a:hover { color: var(--text); }
+    .lang { border: 1px solid var(--line); background: transparent; color: var(--text); font: 600 13px "Geist", sans-serif; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+    .lang:hover { border-color: rgba(255,255,255,0.22); }
+
+    /* Botones */
+    .btn { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; font-weight: 600; font-size: 16px; padding: 13px 22px; border-radius: 999px; transition: transform .18s cubic-bezier(.16,1,.3,1), background .18s, border-color .18s; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: #FFFFFF; }
+    .btn-primary:hover { background: #A53DF5; }
+    .btn-ghost { border: 1px solid rgba(255,255,255,0.18); color: var(--text); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.36); }
+
+    /* Hero */
+    .hero { padding: 72px 0 88px; }
+    .hero .wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 56px; align-items: center; }
+    h1 { font-size: clamp(36px, 4.2vw, 52px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 700; }
+    h1 em { font-style: normal; color: var(--accent-soft); }
+    .lead { margin-top: 22px; font-size: 19px; color: var(--muted); max-width: 30em; }
+    .ctas { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-media { position: relative; border-radius: 22px; overflow: hidden; background: #1B1714; aspect-ratio: 864 / 650;
+      box-shadow: 0 40px 100px rgba(80, 20, 130, 0.35), 0 0 0 1px var(--line); }
+    .hero-media video, .hero-media img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Secciones */
+    section { padding: 96px 0; }
+    h2 { font-size: clamp(32px, 3.8vw, 46px); line-height: 1.08; letter-spacing: -0.03em; font-weight: 700; max-width: 18em; }
+    .section-lead { margin-top: 14px; color: var(--muted); max-width: 60ch; }
+
+    /* Bento: 5 funciones, 5 celdas */
+    .bento { margin-top: 48px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+    .cell { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+    .cell h3 { font-size: 21px; letter-spacing: -0.015em; line-height: 1.25; }
+    .cell p { color: var(--muted); font-size: 16px; }
+    .cell .shot { margin-top: auto; border-radius: 10px; border: 1px solid var(--line); }
+    .c-search { grid-column: 1 / 4; grid-row: 1 / 3; }
+    .c-search .shot { margin-top: 18px; }
+    .c-claude { grid-column: 4 / 7; background: linear-gradient(160deg, #2A1342 0%, #1A1022 70%); border-color: rgba(177,78,255,0.25); }
+    .c-claude code { display: block; margin-top: 6px; padding: 14px 16px; border-radius: 10px; background: rgba(0,0,0,0.35); color: #E9D5FF; font-size: 14.5px; overflow-x: auto; white-space: nowrap; }
+    .c-servers { grid-column: 4 / 7; }
+    .c-servers .icon, .c-privacy .icon { width: 28px; height: 28px; color: var(--accent-soft); }
+    .c-board { grid-column: 1 / 5; padding-bottom: 0; }
+    .c-board .shot { margin-top: 18px; border-bottom: 0; border-radius: 10px 10px 0 0; }
+    .c-privacy { grid-column: 5 / 7; }
+
+    /* Instalar: lista vertical con verbos */
+    .install { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: start; }
+    .steps { display: flex; flex-direction: column; gap: 30px; }
+    .step { display: grid; grid-template-columns: 140px 1fr; gap: 20px; }
+    .step strong { font-size: 24px; letter-spacing: -0.02em; color: var(--accent-soft); line-height: 1.3; }
+    .step p { color: var(--muted); }
+    .step p b { color: var(--text); font-weight: 600; }
+    .cmd { margin-top: 12px; display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 10px 16px; }
+    .cmd code { flex: 1; font-size: 14px; color: var(--text); overflow-x: auto; white-space: nowrap; }
+    .copy { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 7px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font: 500 13px "Geist", sans-serif; }
+    .copy:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
+    .reqs { margin-top: 18px; font-size: 15px; color: var(--muted); }
+
+    /* Open source */
+    .oss { text-align: center; padding: 120px 0; border-top: 1px solid var(--line); }
+    .oss h2 { margin: 0 auto; font-size: clamp(40px, 6vw, 76px); }
+    .oss p { margin: 20px auto 0; color: var(--muted); max-width: 52ch; }
+    .oss .ctas { justify-content: center; }
+
+    footer { border-top: 1px solid var(--line); padding: 32px 0 40px; color: var(--muted); font-size: 14px; }
+    footer .wrap { display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between; }
+    footer a:hover { color: var(--text); }
+
+    /* Entrada al hacer scroll (solo si el usuario no pidió menos movimiento) */
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+      .reveal.in { opacity: 1; transform: none; }
+    }
+
+    /* Mobile */
+    @media (max-width: 900px) {
+      .hero { padding: 40px 0 64px; }
+      .hero .wrap, .install { grid-template-columns: 1fr; gap: 40px; }
+      .bento { grid-template-columns: 1fr; }
+      .c-search, .c-claude, .c-servers, .c-board, .c-privacy { grid-column: auto; grid-row: auto; }
+      .step { grid-template-columns: 1fr; gap: 4px; }
+      .nav-links a.hide-sm { display: none; }
+      section { padding: 72px 0; }
+      .oss { padding: 88px 0; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#"><img src="icon.png" alt="">CENTRO</a>
+      <div class="nav-links">
+        <a class="hide-sm" href="#features" data-i18n="navFeatures">Features</a>
+        <a class="hide-sm" href="#install" data-i18n="navInstall">Install</a>
+        <a href="https://github.com/soykeviin/CENTRO">GitHub</a>
+        <button class="lang" id="lang" type="button" aria-label="Cambiar idioma / Change language">ES</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <div>
+        <h1 data-i18n-html="heroTitle">Your projects, <em>one click</em> from Claude Code</h1>
+        <p class="lead" data-i18n="heroLead">A native Mac app that finds any project from the menu bar and opens it where you work.</p>
+        <div class="ctas">
+          <a class="btn btn-primary" href="https://github.com/soykeviin/CENTRO/releases/latest/download/CENTRO-1.0.0.dmg"><svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M128.23,30A40,40,0,0,1,167,0h1a8,8,0,0,1,0,16h-1a24,24,0,0,0-23.24,18,8,8,0,1,1-15.5-4ZM223.3,169.59a8.07,8.07,0,0,0-2.8-3.4C203.53,154.53,200,134.64,200,120c0-17.67,13.47-33.06,21.5-40.67a8,8,0,0,0,0-11.62C208.82,55.74,187.82,48,168,48a72.23,72.23,0,0,0-40,12.13,71.56,71.56,0,0,0-90.71,9.09A74.63,74.63,0,0,0,16,123.4a127,127,0,0,0,40.14,89.73A39.8,39.8,0,0,0,83.59,224h87.68a39.84,39.84,0,0,0,29.12-12.57,125,125,0,0,0,17.82-24.6C225.23,174,224.33,172,223.3,169.59Z"/></svg><span data-i18n="ctaDownload">Download for Mac</span></a>
+          <a class="btn btn-ghost" href="https://github.com/soykeviin/CENTRO"><svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M208.31,75.68A59.78,59.78,0,0,0,202.93,28,8,8,0,0,0,196,24a59.75,59.75,0,0,0-48,24H124A59.75,59.75,0,0,0,76,24a8,8,0,0,0-6.93,4,59.78,59.78,0,0,0-5.38,47.68A58.14,58.14,0,0,0,56,104v8a56.06,56.06,0,0,0,48.44,55.47A39.8,39.8,0,0,0,96,192v8H72a24,24,0,0,1-24-24A40,40,0,0,0,8,136a8,8,0,0,0,0,16,24,24,0,0,1,24,24,40,40,0,0,0,40,40H96v16a8,8,0,0,0,16,0V192a24,24,0,0,1,48,0v40a8,8,0,0,0,16,0V192a39.8,39.8,0,0,0-8.44-24.53A56.06,56.06,0,0,0,216,112v-8A58.14,58.14,0,0,0,208.31,75.68ZM200,112a40,40,0,0,1-40,40H112a40,40,0,0,1-40-40v-8a41.74,41.74,0,0,1,6.9-22.48A8,8,0,0,0,80,73.83a43.81,43.81,0,0,1,.79-33.58,43.88,43.88,0,0,1,32.32,20.06A8,8,0,0,0,119.82,64h32.35a8,8,0,0,0,6.74-3.69,43.87,43.87,0,0,1,32.32-20.06A43.81,43.81,0,0,1,192,73.83a8.09,8.09,0,0,0,1,7.65A41.72,41.72,0,0,1,200,104Z"/></svg><span data-i18n="ctaCode">View the code</span></a>
+        </div>
+      </div>
+      <div class="hero-media">
+        <video id="demo" autoplay muted loop playsinline preload="metadata" poster="site/media/demo-poster.jpg" aria-label="Menu bar search opening a project in Claude Code">
+          <source src="site/media/demo.webm" type="video/webm">
+          <source src="site/media/demo.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="wrap">
+      <h2 class="reveal" data-i18n="featTitle">What CENTRO does</h2>
+      <div class="bento">
+        <article class="cell c-search reveal">
+          <h3 data-i18n="f1Title">Search from the menu bar</h3>
+          <p data-i18n="f1Body">Click the magnifying glass, type a few letters and choose: Claude Code, the folder or CENTRO. Enter opens the first option.</p>
+          <img class="shot" src="site/media/search-recents.png" width="880" height="648" loading="lazy" alt="CENTRO menu bar search with recent projects and their Claude Code, folder and CENTRO buttons">
+        </article>
+        <article class="cell c-claude reveal">
+          <h3 data-i18n="f2Title">Your Claude Code command</h3>
+          <code>claude --dangerously-skip-permissions</code>
+          <p data-i18n="f2Body">Keep it, or switch to claude or claude --continue. Opens in Terminal or iTerm2.</p>
+        </article>
+        <article class="cell c-servers reveal">
+          <svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M240,128a8,8,0,0,1-8,8H204.94l-37.78,75.58A8,8,0,0,1,160,216h-.4a8,8,0,0,1-7.08-5.14L95.35,60.76,63.28,131.31A8,8,0,0,1,56,136H24a8,8,0,0,1,0-16H50.85L88.72,36.69a8,8,0,0,1,14.76.46l57.51,151,31.85-63.71A8,8,0,0,1,200,120h32A8,8,0,0,1,240,128Z"/></svg>
+          <h3 data-i18n="f3Title">Servers and time</h3>
+          <p data-i18n="f3Body">See which projects are running and on which port, and how much time each one takes.</p>
+        </article>
+        <article class="cell c-board reveal">
+          <h3 data-i18n="f4Title">All your work on one board</h3>
+          <p data-i18n="f4Body">Categories, favorites, detected stack and the git state of every project.</p>
+          <img class="shot" src="screenshot-main.jpg" width="1770" height="1172" loading="lazy" alt="CENTRO main window with a grid of projects, their stack and git branch">
+        </article>
+        <article class="cell c-privacy reveal">
+          <svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.26,47,25.53a8,8,0,0,0,4.2,0c1-.27,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112l0-56,160,0ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z"/></svg>
+          <h3 data-i18n="f5Title">Your data stays on your Mac</h3>
+          <p data-i18n="f5Body">No account, no telemetry. Automatic backup on every launch. Removing a project never deletes files.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap install">
+      <div class="reveal">
+        <h2 data-i18n="instTitle">Install it in a minute</h2>
+        <p class="reqs" data-i18n="instReqs">macOS 15 or later. Apple Silicon and Intel.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <strong data-i18n="s1Verb">Download</strong>
+          <p data-i18n-html="s1Body">Get <b>CENTRO-1.0.0.dmg</b>, open it and drag CENTRO to Applications.</p>
+        </div>
+        <div class="step reveal">
+          <strong data-i18n="s2Verb">Open it</strong>
+          <div>
+            <p data-i18n-html="s2Body">The first time, macOS blocks it because it is not notarized yet. Go to <b>System Settings &gt; Privacy &amp; Security</b> and click <b>Open Anyway</b>, or run:</p>
+            <div class="cmd">
+              <code id="xattr">xattr -dr com.apple.quarantine /Applications/CENTRO.app</code>
+              <button class="copy" type="button" data-copy="xattr"><svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg><span data-i18n="copy">Copy</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="step reveal">
+          <strong data-i18n="s3Verb">Set it up</strong>
+          <p data-i18n="s3Body">Pick your language and how you open projects, then add the folder where you keep them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="oss">
+    <div class="wrap reveal">
+      <h2 data-i18n="ossTitle">Free and open source</h2>
+      <p data-i18n="ossBody">MIT license. If it saves you time, leave a star. If something is missing, open an issue or send a pull request.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="https://github.com/soykeviin/CENTRO"><svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></svg><span data-i18n="ctaStar">Star on GitHub</span></a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span data-i18n-html="footMade">Made by <a href="https://github.com/soykeviin">Kevin Caballero</a>. MIT license.</span>
+      <span><a href="https://github.com/soykeviin/CENTRO/releases" data-i18n="footReleases">Releases</a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/soykeviin/CENTRO/issues" data-i18n="footIssues">Report a problem</a></span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var T = {
+        es: {
+          navFeatures: "Funciones", navInstall: "Instalar",
+          heroTitle: "Tus proyectos, a <em>un clic</em> de Claude Code",
+          heroLead: "Una app nativa para Mac que encuentra cualquier proyecto desde la barra de menú y lo abre donde trabajás.",
+          ctaDownload: "Descargar para Mac", ctaCode: "Ver el código",
+          featTitle: "Qué hace CENTRO",
+          f1Title: "Buscá desde la barra de menú",
+          f1Body: "Tocá la lupa, escribí unas letras y elegí: Claude Code, la carpeta o CENTRO. Enter abre la primera opción.",
+          f2Title: "Tu comando de Claude Code",
+          f2Body: "Dejalo así o cambialo por claude o claude --continue. Abre en Terminal o iTerm2.",
+          f3Title: "Servidores y tiempo",
+          f3Body: "Ves qué proyectos están corriendo y en qué puerto, y cuánto tiempo le dedicás a cada uno.",
+          f4Title: "Todo tu trabajo en un tablero",
+          f4Body: "Categorías, favoritos, tecnologías detectadas y el estado de git de cada proyecto.",
+          f5Title: "Tus datos quedan en tu Mac",
+          f5Body: "Sin cuenta ni telemetría. Respaldo automático cada vez que la abrís. Quitar un proyecto nunca borra archivos.",
+          instTitle: "Instalala en un minuto",
+          instReqs: "macOS 15 o superior. Apple Silicon e Intel.",
+          s1Verb: "Descargá", s1Body: "Bajá <b>CENTRO-1.0.0.dmg</b>, abrilo y arrastrá CENTRO a Aplicaciones.",
+          s2Verb: "Abrila", s2Body: "La primera vez macOS la frena porque todavía no está notarizada. Andá a <b>Ajustes del Sistema &gt; Privacidad y seguridad</b> y tocá <b>Abrir igualmente</b>, o corré:",
+          copy: "Copiar", copied: "Copiado",
+          s3Verb: "Configurala", s3Body: "Elegí tu idioma y cómo abrís tus proyectos, y agregá la carpeta donde los guardás.",
+          ossTitle: "Gratis y open source",
+          ossBody: "Licencia MIT. Si te ahorra tiempo, dejale una estrella. Si le falta algo, abrí un issue o mandá un pull request.",
+          ctaStar: "Dejar una estrella",
+          footMade: 'Hecho por <a href="https://github.com/soykeviin">Kevin Caballero</a>. Licencia MIT.',
+          footReleases: "Versiones", footIssues: "Reportar un problema"
+        }
+      };
+      var en = {};
+      document.querySelectorAll("[data-i18n]").forEach(function (el) { en[el.dataset.i18n] = el.textContent; });
+      document.querySelectorAll("[data-i18n-html]").forEach(function (el) { en[el.dataset.i18nHtml] = el.innerHTML; });
+      en.copied = "Copied";
+      T.en = en;
+
+      var lang;
+      try { lang = localStorage.getItem("centro-lang"); } catch (e) {}
+      var q = (location.search.match(/[?&]lang=(es|en)/) || [])[1];
+      if (q) lang = q;
+      if (!lang) lang = (navigator.language || "en").toLowerCase().indexOf("es") === 0 ? "es" : "en";
+
+      function apply(l) {
+        var d = T[l];
+        document.documentElement.lang = l;
+        document.querySelectorAll("[data-i18n]").forEach(function (el) { if (d[el.dataset.i18n]) el.textContent = d[el.dataset.i18n]; });
+        document.querySelectorAll("[data-i18n-html]").forEach(function (el) { if (d[el.dataset.i18nHtml]) el.innerHTML = d[el.dataset.i18nHtml]; });
+        document.getElementById("lang").textContent = l === "es" ? "EN" : "ES";
+        lang = l;
+      }
+      apply(lang);
+      document.getElementById("lang").addEventListener("click", function () {
+        var next = lang === "es" ? "en" : "es";
+        try { localStorage.setItem("centro-lang", next); } catch (e) {}
+        apply(next);
+      });
+
+      // Copiar el comando de xattr
+      document.querySelectorAll("[data-copy]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var text = document.getElementById(btn.dataset.copy).textContent;
+          var label = btn.querySelector("span");
+          (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+            label.textContent = T[lang].copied;
+            setTimeout(function () { label.textContent = T[lang].copy; }, 1600);
+          }).catch(function () {});
+        });
+      });
+
+      // Video: sin autoplay si el usuario pidió menos movimiento
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        var v = document.getElementById("demo"); v.removeAttribute("autoplay"); v.pause();
+        v.setAttribute("controls", "");
+      }
+
+      // Entrada al hacer scroll
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+        }, { threshold: 0.15 });
+        document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
+      }
+    })();
+  </script>
+</body>
+</html>

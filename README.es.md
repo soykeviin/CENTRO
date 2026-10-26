@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">Read in English</a>
+  <a href="https://soykeviin.github.io/CENTRO/">Sitio web</a> &nbsp;·&nbsp; <a href="README.md">Read in English</a>
 </p>
 
 <p align="center">
